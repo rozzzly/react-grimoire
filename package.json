@@ -1,0 +1,31 @@
+{
+  "name": "react-grimoire",
+  "version": "0.0.1",
+  "description": "Inspects TypeScript React components and extracts information on them. Similar to reactjs/react-docgen.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/rozzzly/react-grimoire.git"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "javascript",
+    "jsdoc",
+    "tsdoc",
+    "doc",
+    "documentation",
+    "ast",
+    "introspection",
+    "component"
+  ],
+  "author": "rozzzly",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rozzzly/react-grimoire/issues"
+  },
+  "homepage": "https://github.com/rozzzly/react-grimoire#readme"
+}
