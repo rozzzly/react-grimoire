@@ -25,7 +25,7 @@
         /// Previously		"jsx": "react"
         /// NoW		"jsx": "preserve"
         ///
-        "jsx": "preserve",
+        "jsx": "react",
         //"allowSyntheticDefaultImports": true,
         "preserveConstEnums": true,
         "emitDecoratorMetadata": true,
@@ -48,12 +48,13 @@
         "charset": "utf-8",
         "removeComments": false, // otherwise, why'd you type them in the first place?!
         "forceConsistentCasingInFileNames": false, // hell no, I'm a big boy.
-        "rootDir": ".",
+      
         "baseUrl": ".",
         "outDir": "./bin"
     },
     "exclude": [
         "./bin",
+        "./fixtures",
         "./node_modules"
     ],
     "typeAcquisition": {

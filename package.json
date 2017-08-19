@@ -4,7 +4,9 @@
   "description": "Inspects TypeScript React components and extracts information on them. Similar to reactjs/react-docgen.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc && ava",
+    "build": "tsc",
+    "start": "node ./bin/index.js"
   },
   "repository": {
     "type": "git",
@@ -27,5 +29,24 @@
   "bugs": {
     "url": "https://github.com/rozzzly/react-grimoire/issues"
   },
-  "homepage": "https://github.com/rozzzly/react-grimoire#readme"
+  "homepage": "https://github.com/rozzzly/react-grimoire#readme",
+  "ava": {
+    "files": [
+      "./bin/**/*.spec.js"
+    ],
+    "typescript": true
+  },
+  "dependencies": {
+    "@types/fs-extra-promise": "^1.0.2",
+    "@types/node": "^8.0.24",
+    "@types/react": "^16.0.2",
+    "@types/react-dom": "^15.5.3",
+    "ava": "^0.22.0",
+    "fs-extra-promise": "^1.0.1",
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1",
+    "ts-node": "^3.3.0",
+    "ts-simple-ast": "^0.50.0",
+    "typescript": "^2.4.2"
+  }
 }
