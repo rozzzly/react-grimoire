@@ -93,7 +93,7 @@ export type ReactImport = (
     }
 );
 
-export function dequote(str: string): Falsifiable<string> {
+export function dequoteRawStringLiteral(str: string): Falsifiable<string> {
     const singleQuotes: RegExp = /^\'([\s\S]*)\'/;
     const doubleQuotes: RegExp = /^\"([\s\S]*)\"/;
     let match: RegExpExecArray;
@@ -173,5 +173,6 @@ loadFixture('sfc').then(content => {
     const src = ast.getSourceFiles()[0].compilerNode;
 
     console.log(identifyReact(src));
+    console.log(getExports(src).map(exp => exp.getText()))
     
 });
