@@ -10,35 +10,41 @@ export type Falsifiable<T> = T | false;
 export const FIXTURE_ROOT: string = path.resolve(__dirname, '..', 'fixtures');
 export const TSCONFIG_PATH: string = path.resolve(__dirname, '..', 'tsconfig.json');
 
-export async function loadFixture(fixture: string): Promise<string | false> {
-    let pathToTest: string = fixture;
+export async function resolveFixture(fixture: string): Promise<string | false> {
+    let fixturePath: string = fixture;
 
+    // allow specifying path relative to fixture directory
     if (!path.isAbsolute(fixture)) {
-        pathToTest = path.join(FIXTURE_ROOT, pathToTest);
+        fixturePath = path.join(FIXTURE_ROOT, fixturePath);
     }
 
-    if (!pathToTest.endsWith('.ts') && !pathToTest.endsWith('.tsx')) {
-        pathToTest += '.tsx';
+    // allow omission of file extension
+    if (!fixturePath.endsWith('.ts') && !fixturePath.endsWith('.tsx')) {
+        fixturePath += '.tsx';
     }
 
+    // test to see if fixture file even exists.
+    let canRead: boolean = false;
+    let error: Falsifiable<Error> = false;
     try {
-        const stats = await fs.statAsync(pathToTest);
-        if (!stats) {
-            console.error(`Failed to find fixture (${fixture}) at ${pathToTest}`);
-            return false;
-        }
+        const stats = await fs.statAsync(fixturePath);
+        if (stats) canRead = true;
     } catch (e) {
-        console.error(`Failed to find fixture (${fixture}) at ${pathToTest}`, e);
-        return false;
+        error = e;
     }
     
-    try {
-        const content = await fs.readFileAsync(pathToTest);
-        return content.toString();
-    } catch (e) {
-        console.error(`Failed reading fixture (${fixture}) at ${pathToTest}`, e)
-        return false;
+    if (canRead) return fixturePath;
+    else {
+        return Promise.reject({ 
+            message: 'No fixture exists at resolved path',
+            fixture,
+            fixturePath,
+            error
+        });
     }
+}
+
+export async function loadFixture(file: string): Promise<ts.Program> {
 
 }
 
@@ -176,3 +182,4 @@ loadFixture('sfc').then(content => {
     console.log(getExports(src).map(exp => exp.getText()))
     
 });
+
