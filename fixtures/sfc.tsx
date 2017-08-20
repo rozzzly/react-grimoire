@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Component, PropTypes as FooBar } from 'react';
 
 export interface ButtonProps {
     /** The color of the `Button`'s Text. **/
