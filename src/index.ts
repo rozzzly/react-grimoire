@@ -10,7 +10,7 @@ export type Falsifiable<T> = T | false;
 export const FIXTURE_ROOT: string = path.resolve(__dirname, '..', 'fixtures');
 export const TSCONFIG_PATH: string = path.resolve(__dirname, '..', 'tsconfig.json');
 
-export async function resolveFixture(fixture: string): Promise<string | false> {
+export async function resolveFixture(fixture: string): Promise<string> {
     let fixturePath: string = fixture;
 
     // allow specifying path relative to fixture directory
@@ -44,15 +44,24 @@ export async function resolveFixture(fixture: string): Promise<string | false> {
     }
 }
 
-export async function loadFixture(file: string): Promise<ts.Program> {
-
+export function loadFixture(file: string): ts.Program {
+    const program = ts.createProgram([file], {
+        target: ts.ScriptTarget.ESNext,
+        module: ts.ModuleKind.ESNext
+    });
+    return program;
 }
 
-export function printKind(node: ts.Node): void {
+export function display(node: ts.Node): void {
+    console.log(`${ts.SyntaxKind[node.kind]}\t${JSON.stringify(node.getText())}`);
+}
+
+
+export function kind(node: ts.Node): void {
     console.log(ts.SyntaxKind[node.kind]);
 }
-export function printKindsOfChildren(node: ts.Node): void {
-    node.getChildren().forEach(printKind);
+export function kindsOfChildren(node: ts.Node): void {
+    node.getChildren().forEach(kind);
 }
 
 export function getSyntaxList(node: ts.SyntaxList | ts.SourceFile): ts.SyntaxList {
@@ -173,13 +182,17 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
     return exported;
 }
 
-loadFixture('sfc').then(content => {
-    const ast = new AST({ tsConfigFilePath: TSCONFIG_PATH })
-    ast.addSourceFiles(path.join(FIXTURE_ROOT, 'sfc.tsx'));
-    const src = ast.getSourceFiles()[0].compilerNode;
 
-    console.log(identifyReact(src));
-    console.log(getExports(src).map(exp => exp.getText()))
-    
+
+
+resolveFixture('sfc').then(fixturePath => {
+    const program = loadFixture(fixturePath);
+    console.log(`tsserver loaded ${program.getSourceFiles().length} files.`);
+    const chk = program.getTypeChecker();
+    const src = program.getSourceFile(fixturePath);
+    const reactReferences = identifyReact(src);
+    console.log(reactReferences);
+    const Button = src.statements.find(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement;
+    display(Button);
+    console.log(chk.getSymbolAtLocation(Button.declarationList.declarations[0].name));
 });
-

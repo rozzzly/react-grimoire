@@ -28,3 +28,10 @@ https://github.com/dsherret/ts-simple-ast
 https://github.com/Microsoft/TypeScript-wiki/blob/master/Using-the-Compiler-API.md
 
 > The "Using the Type Checker" example will be quite valuable. It creates a JSON object mirroring the structure of exported classes, complete with type info and documentation
+
+
+##### Things to snatch
+
+https://sourcegraph.com/github.com/dsherret/ts-simple-ast@71074b516b7b1c7e3138b5f3e468c258a8510804/-/blob/src/utils/CompilerOptionsResolver.ts#L34-35
+
+> Load `ts.CompilerOptions` from tsconfig.
