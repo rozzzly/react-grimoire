@@ -9,8 +9,10 @@
             "request": "launch",
             "name": "Launch Program",
             "program": "${file}",
+            "restart": true,
+            "sourceMaps": true,
             "outFiles": [
-                "${workspaceRoot}/out/**/*.js"
+                "${workspaceRoot}/bin/**/*.js"
             ]
         }
     ]
