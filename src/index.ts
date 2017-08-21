@@ -182,8 +182,32 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
     return exported;
 }
 
+type Node<K, D extends ts.Node> = {
+    kind: K;
+} & D;
+
+type KnownNodes = (
+    | Node<ts.SyntaxKind.ComputedPropertyName, ts.ComputedPropertyName>
+    | Node<ts.SyntaxKind.StringLiteral, ts.StringLiteral>
+)
 
 
+
+function test(t: KnownNodes) {
+    if (t.kind === ts.SyntaxKind.ComputedPropertyName) {
+        t
+    }
+}
+
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): T[];
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): T[];
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): Node[] {
+    if (Array.isArray(kind)) {
+        return nodes.filter(node => kind.includes(node.kind));
+    } else {
+        return nodes.filter(node => node.kind === kind);
+    }
+}
 
 resolveFixture('sfc').then(fixturePath => {
     const program = loadFixture(fixturePath);
@@ -192,7 +216,8 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    const Button = src.statements.find(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement;
-    display(Button);
-    console.log(chk.getSymbolAtLocation(Button.declarationList.declarations[0].name));
+    const Button = ofKind(src.statements, ts.SyntaxKind.VariableStatement)
+    const foo = Button.declarationList.declarations[0];
+    // display(Button);
+    // console.log(chk.getTypeAtLocation(Button.declarationList.declarations[0].name));
 });
