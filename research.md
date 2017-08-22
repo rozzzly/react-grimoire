@@ -35,3 +35,17 @@ https://github.com/Microsoft/TypeScript-wiki/blob/master/Using-the-Compiler-API.
 https://sourcegraph.com/github.com/dsherret/ts-simple-ast@71074b516b7b1c7e3138b5f3e468c258a8510804/-/blob/src/utils/CompilerOptionsResolver.ts#L34-35
 
 > Load `ts.CompilerOptions` from tsconfig.
+
+
+
+--------------------------------------------------------
+
+
+
+### type inference
+
+https://github.com/Microsoft/TypeScript/issues/17915
+
+https://github.com/Microsoft/TypeScript/issues/17930
+
+  https://github.com/pelotom/unionize

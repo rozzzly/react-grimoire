@@ -199,9 +199,9 @@ function test(t: KnownNodes) {
     }
 }
 
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): T[];
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): T[];
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): Node[] {
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): ts.Node[];
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): ts.Node[];
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): ts.Node[] {
     if (Array.isArray(kind)) {
         return nodes.filter(node => kind.includes(node.kind));
     } else {
@@ -216,8 +216,9 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    const Button = ofKind(src.statements, ts.SyntaxKind.VariableStatement)
-    const foo = Button.declarationList.declarations[0];
+    const Button = ofKind(src.statements as any, ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
+    const foo = Button.forEach(shit => console.log(shit.declarationList.declarations[0].name.getText()));
     // display(Button);
     // console.log(chk.getTypeAtLocation(Button.declarationList.declarations[0].name));
 });
+
