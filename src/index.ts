@@ -181,47 +181,22 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
 
     return exported;
 }
-export enum MyEnum {
-    First = 0,
-    Second = 1,
-}
 
-export type EnumMap = {
-    [P in MyEnum]: string;
-}
-
-export type KnownNodes = (
-    | ts.StringLiteral
-    | ts.ComputedPropertyName
-);
-export type NodeTypes = keyof NodeLookup;
-
-export function isKind(node: ts.Node, kind: ts.SyntaxKind.StringLiteral): node is ts.StringLiteral;
-export function isKind(node: ts.Node, kind: ts.SyntaxKind): node is ts.Node {
-    return node.kind === kind as any;
-}
-
-let foo: ts.Node; 
-if(isKind(foo, ts.SyntaxKind.StringLiteral)) { 
-    foo
-} else {
-    
-}
-
-function test(t: KnownNodes) {
-    if (t.kind === ts.SyntaxKind.ComputedPropertyName) {
-        
-    }
-}
-
-// export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): ts.Node[];
-// export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): ts.Node[];
-export function ofKind<K extends ts.SyntaxKind>(nodes: KnownNodes[], kind: K | K[]): NodeLookup[K];
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): NodeLookup[kind] {
-    if (Array.isArray(kind)) {
-        return nodes.filter(node => kind.includes(node.kind));
+export function locateSymbolForPropTypesAtDecl(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
+    if (decl.type && decl.type.kind === ts.SyntaxKind.TypeReference) {
+        const ref: ts.TypeReferenceNode = decl.type as any as ts.TypeReferenceNode;
+        if (ref.typeArguments.length === 1) {
+            const props = ref.typeArguments[0];
+            const name = props.getText();
+            const symbolsInScope = chk.getSymbolsInScope(decl, ts.SymbolFlags.Interface);
+            const matchingSymbol = symbolsInScope.find(sym => sym.name === name);
+            console.log(matchingSymbol);
+            return matchingSymbol;
+        } else {
+            throw new RangeError('Unexpected number of typeArguments')
+        }
     } else {
-        return nodes.filter(node => node.kind === kind);
+        throw new TypeError('`decl.type.kind` !== `ts.SyntaxKind.TypeReference`')
     }
 }
 
@@ -232,8 +207,23 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    const Button = ofKind(src.statements as any, ts.SyntaxKind.VariableStatement);
-    const foo = Button.forEach(shit => console.log(shit.declarationList.declarations[0].name.getText()));
+    const varStmts = src.statements.filter(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
+    let varDecls: ts.VariableDeclaration[] = [];
+    varStmts.forEach(stmt => varDecls = [...varDecls, ...stmt.declarationList.declarations]);
+    const SFCs = varDecls.filter(decl => {
+        const declType = chk.getTypeAtLocation(decl);
+        if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
+            return true;
+        } else {
+            return false;
+        }
+    });
+    SFCs.forEach(sfc => {
+        // const declType = chk.getTypeAtLocation(sfc); /*?*/
+        locateSymbolForPropTypesAtDecl(chk, sfc);
+        
+    })
+    // const foo = Button.forEach(shit => console.log(shit.declarationList.declarations[0].name.getText()));
     // display(Button);
     // console.log(chk.getTypeAtLocation(Button.declarationList.declarations[0].name));
 });
