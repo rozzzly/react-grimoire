@@ -181,27 +181,43 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
 
     return exported;
 }
+export enum MyEnum {
+    First = 0,
+    Second = 1,
+}
 
-type Node<K, D extends ts.Node> = {
-    kind: K;
-} & D;
+export type EnumMap = {
+    [P in MyEnum]: string;
+}
 
-type KnownNodes = (
-    | Node<ts.SyntaxKind.ComputedPropertyName, ts.ComputedPropertyName>
-    | Node<ts.SyntaxKind.StringLiteral, ts.StringLiteral>
-)
+export type KnownNodes = (
+    | ts.StringLiteral
+    | ts.ComputedPropertyName
+);
+export type NodeTypes = keyof NodeLookup;
 
+export function isKind(node: ts.Node, kind: ts.SyntaxKind.StringLiteral): node is ts.StringLiteral;
+export function isKind(node: ts.Node, kind: ts.SyntaxKind): node is ts.Node {
+    return node.kind === kind as any;
+}
 
+let foo: ts.Node; 
+if(isKind(foo, ts.SyntaxKind.StringLiteral)) { 
+    foo
+} else {
+    
+}
 
 function test(t: KnownNodes) {
     if (t.kind === ts.SyntaxKind.ComputedPropertyName) {
-        t
+        
     }
 }
 
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): ts.Node[];
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): ts.Node[];
-export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): ts.Node[] {
+// export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind): ts.Node[];
+// export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind[]): ts.Node[];
+export function ofKind<K extends ts.SyntaxKind>(nodes: KnownNodes[], kind: K | K[]): NodeLookup[K];
+export function ofKind(nodes: KnownNodes[], kind: ts.SyntaxKind | ts.SyntaxKind[]): NodeLookup[kind] {
     if (Array.isArray(kind)) {
         return nodes.filter(node => kind.includes(node.kind));
     } else {
@@ -216,7 +232,7 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    const Button = ofKind(src.statements as any, ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
+    const Button = ofKind(src.statements as any, ts.SyntaxKind.VariableStatement);
     const foo = Button.forEach(shit => console.log(shit.declarationList.declarations[0].name.getText()));
     // display(Button);
     // console.log(chk.getTypeAtLocation(Button.declarationList.declarations[0].name));

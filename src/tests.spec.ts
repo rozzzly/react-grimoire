@@ -58,7 +58,17 @@ const initialState: State = {
     posts: []
 };
 
+export type Lookup = {
+    CREATE_POST: CREATE_POST_Action;
+    DELETE_POST: DELETE_POST_Action;
+}
 
+function cast<T extends KnownActionIDs>(action: KnownActions, type: T): Lookup[T] {
+    return undefined;
+}
+
+const foo = cast(undefined, 'CREATE_POST');
+foo.payload
 
 
 

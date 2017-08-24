@@ -49,3 +49,9 @@ https://github.com/Microsoft/TypeScript/issues/17915
 https://github.com/Microsoft/TypeScript/issues/17930
 
   https://github.com/pelotom/unionize
+
+https://github.com/Microsoft/TypeScript/issues/17930#issuecomment-323572209
+
+https://github.com/Microsoft/TypeScript/issues/17924
+
+https://github.com/Microsoft/TypeScript/issues/13042
