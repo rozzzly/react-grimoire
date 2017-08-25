@@ -202,7 +202,7 @@ export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceF
     );
 }
 
-export function getJSDocOnStatelessComponent(decl: ts.VariableDeclaration) {
+export function getJSDocFromVariableDeclaration(decl: ts.VariableDeclaration) {
     const parentNode = decl.parent;
     if (parentNode && ts.isVariableDeclarationList(parentNode)) {
         const grandfatherNode = parentNode.parent;
@@ -217,6 +217,10 @@ export function getJSDocOnStatelessComponent(decl: ts.VariableDeclaration) {
         log({ decl });
         throw new TypeError('Unexpected `SyntaxKind` for parent. Expected parent of a `VariableDeclaration` to be a `VariableDeclarationList`!');
     }
+}
+
+export function getStatelessComponentMetadata(decl: ts.VariableDeclaration) {
+    
 }
 
 export function locateSymbolForPropTypesOnStatelessComponent(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
