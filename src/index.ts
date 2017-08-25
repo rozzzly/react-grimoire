@@ -182,6 +182,25 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
     return exported;
 }
 
+export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceFile): ts.VariableStatement {
+    const varStmts = src.statements.filter(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
+    let varDecls: ts.VariableDeclaration[] = [];
+    varStmts.forEach(stmt => varDecls = [...varDecls, ...stmt.declarationList.declarations]);
+    const SFCs = varDecls.filter(decl => {
+        const declType = chk.getTypeAtLocation(decl);
+        if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
+            return true;
+        } else {
+            return false;
+        }
+    });
+    SFCs.forEach(sfc => {
+        // const declType = chk.getTypeAtLocation(sfc); /*?*/
+        locateSymbolForPropTypesAtDecl(chk, sfc);
+        
+    })
+}
+
 export function locateSymbolForPropTypesAtDecl(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
     if (decl.type && decl.type.kind === ts.SyntaxKind.TypeReference) {
         const ref: ts.TypeReferenceNode = decl.type as any as ts.TypeReferenceNode;
