@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as ts from 'typescript';
 
 import AST from 'ts-simple-ast';
+import { filter } from './type-tools';
 
 export type Falsifiable<T> = T | false;
 
@@ -50,6 +51,10 @@ export function loadFixture(file: string): ts.Program {
         module: ts.ModuleKind.ESNext
     });
     return program;
+}
+
+export function log<D extends {}>(data: D): void {
+    console.error(JSON.stringify(data));
 }
 
 export function display(node: ts.Node): void {
@@ -182,40 +187,63 @@ export function getExports(src: ts.SourceFile): ts.ExportDeclaration[] {
     return exported;
 }
 
-export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceFile): ts.VariableStatement {
-    const varStmts = src.statements.filter(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
-    let varDecls: ts.VariableDeclaration[] = [];
-    varStmts.forEach(stmt => varDecls = [...varDecls, ...stmt.declarationList.declarations]);
-    const SFCs = varDecls.filter(decl => {
-        const declType = chk.getTypeAtLocation(decl);
-        if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
-            return true;
-        } else {
-            return false;
-        }
-    });
-    SFCs.forEach(sfc => {
-        // const declType = chk.getTypeAtLocation(sfc); /*?*/
-        locateSymbolForPropTypesAtDecl(chk, sfc);
-        
-    })
+export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceFile): ts.VariableDeclaration[] {
+    return (
+        filter(src.statements, ts.SyntaxKind.VariableStatement) // just variable stmts
+        .reduce((r, v) => [...r, ...v.declarationList.declarations], []) // flatten
+        .filter(decl => { // only variables with the type of SFC
+            const declType = chk.getTypeAtLocation(decl);
+            if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
+                return true; // typed as an SFC
+            } else {
+                return false; // has a different type
+            }
+        })
+    );
 }
 
-export function locateSymbolForPropTypesAtDecl(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
-    if (decl.type && decl.type.kind === ts.SyntaxKind.TypeReference) {
-        const ref: ts.TypeReferenceNode = decl.type as any as ts.TypeReferenceNode;
-        if (ref.typeArguments.length === 1) {
-            const props = ref.typeArguments[0];
-            const name = props.getText();
-            const symbolsInScope = chk.getSymbolsInScope(decl, ts.SymbolFlags.Interface);
-            const matchingSymbol = symbolsInScope.find(sym => sym.name === name);
-            console.log(matchingSymbol);
-            return matchingSymbol;
+export function getJSDocOnStatelessComponent(decl: ts.VariableDeclaration) {
+    const parentNode = decl.parent;
+    if (parentNode && ts.isVariableDeclarationList(parentNode)) {
+        const grandfatherNode = parentNode.parent;
+        if (ts.isVariableStatement(grandfatherNode)) {
+            if (grandfatherNode.jsDoc)
         } else {
-            throw new RangeError('Unexpected number of typeArguments')
+            log({ decl, parentNode })
+            throw new TypeError('Unexpected `SyntaxKind` for grandfather node. Expected parent of a `VariableDeclaration` to be a `VariableDeclarationList`!');
         }
     } else {
-        throw new TypeError('`decl.type.kind` !== `ts.SyntaxKind.TypeReference`')
+        // not trying to pull JSDoc off of a `CatchClause`
+        log({ decl });
+        throw new TypeError('Unexpected `SyntaxKind` for parent. Expected parent of a `VariableDeclaration` to be a `VariableDeclarationList`!');
+    }
+}
+
+export function locateSymbolForPropTypesOnStatelessComponent(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
+    if (decl.type && ts.isTypeReferenceNode(decl.type)) {
+        if (decl.type.typeArguments.length === 1) {
+            const props = decl.type.typeArguments[0];
+            const propsIdentifier = props.getText();
+            const symbolsInScope = chk.getSymbolsInScope(decl, ts.SymbolFlags.Interface);
+            const matchingSymbol = symbolsInScope.find(sym => sym.name === propsIdentifier);
+            if (matchingSymbol) {
+                return matchingSymbol;
+            } else {
+                log({
+                    decl,
+                    props,
+                    propsIdentifier,
+                    symbolsInScope
+                });
+                throw new ReferenceError('Could not find the referenced `Symbol`! ');
+            }
+        } else {
+            log({ decl,  name });
+            throw new RangeError('Unexpected number of `typeArguments`!')
+        }
+    } else {
+        log({ decl });
+        throw new TypeError('Expected `SyntaxKind` to be a `TypeReferenceNode`!')
     }
 }
 
@@ -226,22 +254,13 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    const varStmts = src.statements.filter(stmt => stmt.kind === ts.SyntaxKind.VariableStatement) as ts.VariableStatement[];
-    let varDecls: ts.VariableDeclaration[] = [];
-    varStmts.forEach(stmt => varDecls = [...varDecls, ...stmt.declarationList.declarations]);
-    const SFCs = varDecls.filter(decl => {
-        const declType = chk.getTypeAtLocation(decl);
-        if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
-            return true;
-        } else {
-            return false;
-        }
+    
+    identifyStatelessComponents(chk, src).forEach(sfc => {
+        console.log(sfc);
+        console.log(locateSymbolForPropTypesOnStatelessComponent(chk, sfc));
+        console.log('----------------------------------------');
     });
-    SFCs.forEach(sfc => {
-        // const declType = chk.getTypeAtLocation(sfc); /*?*/
-        locateSymbolForPropTypesAtDecl(chk, sfc);
-        
-    })
+
     // const foo = Button.forEach(shit => console.log(shit.declarationList.declarations[0].name.getText()));
     // display(Button);
     // console.log(chk.getTypeAtLocation(Button.declarationList.declarations[0].name));
