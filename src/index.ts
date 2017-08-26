@@ -230,23 +230,99 @@ export function getStatelessComponentMetadata(decl: ts.VariableDeclaration) {
     
 }
 
+export interface PropType {
+    type: ExtendedTypeInfo;
+    required: boolean;
+    jsDoc: Falsifiable<JSDoc>;
+}
+
+export interface PropTypes {
+    props: (PropType & { propName: string; })[];
+}
+
+export type BasicTypeInfo = string;
+
+export interface ExtendedTypeInfo {
+    text: BasicTypeInfo;
+    truncatedText: Falsifiable<BasicTypeInfo>;
+    __type: ts.Type;
+    __typeDeclaration: ts.TypeElement;
+}
+
+export type TypeInfo = (
+    | BasicTypeInfo
+    | ExtendedTypeInfo
+);
+
+export interface ReducedPropTypes {
+    [propName: string]: PropType;
+}
+
+export function getTypeOfInterfaceMember(chk: ts.TypeChecker, member: ts.TypeElement, extendedMode: false): BasicTypeInfo;
+export function getTypeOfInterfaceMember(chk: ts.TypeChecker, member: ts.TypeElement, extendedMode: true): ExtendedTypeInfo;
+export function getTypeOfInterfaceMember(chk: ts.TypeChecker, member: ts.TypeElement, extendedMode: boolean): BasicTypeInfo | ExtendedTypeInfo {
+    const memberType = chk.getTypeAtLocation(member);
+    const text = chk.typeToString(memberType, undefined, ts.TypeFormatFlags.NoTruncation);
+    
+    if (!extendedMode) {
+        return text;
+    } else {
+        const truncatedText = chk.typeToString(memberType);
+        return {
+            text: text,
+            truncatedText: (truncatedText !== text) ? truncatedText : false,
+            __type: memberType,
+            __typeDeclaration: member
+        };
+
+    }
+}
+
+export function getPropTypesFromInterface(chk: ts.TypeChecker, sym: ts.Symbol) {
+    const propTypes: PropTypes = { props: [] };
+    sym.declarations.forEach(decl => {
+        if (!ts.isInterfaceDeclaration(decl)) {
+            throw new TypeError('Unexpected `SyntaxKind` for declaration of `Symbol`! Expected a `InterfaceDeclaration`.')
+        } else {
+            decl.members.forEach(member => {
+                propTypes.props.push({
+                    required: !!member.questionToken,
+                    propName: member.name.getText(),
+                    type: getTypeOfInterfaceMember(chk, member, true),
+                    jsDoc: false
+                })
+            });
+        }
+    });
+}
+
 export function locateSymbolForPropTypesOnStatelessComponent(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
     if (decl.type && ts.isTypeReferenceNode(decl.type)) {
         if (decl.type.typeArguments.length === 1) {
-            const props = decl.type.typeArguments[0];
-            const propsIdentifier = props.getText();
-            const symbolsInScope = chk.getSymbolsInScope(decl, ts.SymbolFlags.Interface);
-            const matchingSymbol = symbolsInScope.find(sym => sym.name === propsIdentifier);
-            if (matchingSymbol) {
-                return matchingSymbol;
+            const ref = decl.type.typeArguments[0];
+            /**
+             * Could also be achieved by searching `Symbol`s in the scope for one with the same identifier
+             *
+             * eg:
+             * ```typescript
+             * const propsIdentifier = props.getText();
+             * const symbolsInScope = chk.getSymbolsInScope(decl, ts.SymbolFlags.Interface);
+             * const matchingSymbol = symbolsInScope.find(sym => sym.name === propsIdentifier);
+             * ```
+             *
+             * I assume this is what the current implementation essentially does behind the scenes,
+             * but would expect that it probably has extra checks for edge cases built-in.
+             *
+             * The reason I'm using im not using this is method is that I image (but have yet to test)
+             * that there could be issues with type aliases and the like.
+             *
+             **/
+            const type = chk.getTypeFromTypeNode(ref);
+            if (!type.symbol) {
+                log({ decl, ref, type });
+                throw new ReferenceError('Could not get `Symbol` linked to PropTypes of component.');
             } else {
-                log({
-                    decl,
-                    props,
-                    propsIdentifier,
-                    symbolsInScope
-                });
-                throw new ReferenceError('Could not find the referenced `Symbol`! ');
+                return type.symbol;
             }
         } else {
             log({ decl,  name });
@@ -267,11 +343,12 @@ resolveFixture('sfc').then(fixturePath => {
     console.log(reactReferences);
     
     identifyStatelessComponents(chk, src).forEach(sfc => {
-        console.log(sfc);        
+        // console.log(sfc);        
         console.log('----------------------------------------');
-        console.log(locateSymbolForPropTypesOnStatelessComponent(chk, sfc));
+        const propTypesSym = locateSymbolForPropTypesOnStatelessComponent(chk, sfc);
         console.log('----------------------------------------');
-        console.log(getJSDocFromVariableDeclaration(chk, sfc));
+        console.log(getPropTypesFromInterface(chk, propTypesSym));
+        // console.log(getJSDocFromVariableDeclaration(chk, sfc));
         console.log('----------------------------------------');
         console.log('----------------------------------------');
     });
