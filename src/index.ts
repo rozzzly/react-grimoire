@@ -202,21 +202,28 @@ export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceF
     );
 }
 
-export function getJSDocFromVariableDeclaration(decl: ts.VariableDeclaration) {
-    const parentNode = decl.parent;
-    if (parentNode && ts.isVariableDeclarationList(parentNode)) {
-        const grandfatherNode = parentNode.parent;
-        if (ts.isVariableStatement(grandfatherNode)) {
-            if (grandfatherNode.jsDoc)
-        } else {
-            log({ decl, parentNode })
-            throw new TypeError('Unexpected `SyntaxKind` for grandfather node. Expected parent of a `VariableDeclaration` to be a `VariableDeclarationList`!');
+export interface JSDoc {
+    parts: ts.SymbolDisplayPart[];
+    fullText: string;
+    tags: ts.JSDocTagInfo[];
+    _declaration: ts.Declaration;
+}
+
+export function getJSDocFromVariableDeclaration(chk: ts.TypeChecker, decl: ts.VariableDeclaration) {
+    const sym = chk.getSymbolAtLocation(decl.name);
+    if (sym) {
+        const docComments: ts.SymbolDisplayPart[] = sym.getDocumentationComment();
+        const jsdoc: JSDoc = {
+            _declaration: decl,
+            parts: docComments,
+            fullText: undefined,
+            tags: sym.getJsDocTags(),
         }
+        return jsdoc;
     } else {
-        // not trying to pull JSDoc off of a `CatchClause`
-        log({ decl });
-        throw new TypeError('Unexpected `SyntaxKind` for parent. Expected parent of a `VariableDeclaration` to be a `VariableDeclarationList`!');
+        throw new RangeError('Unable to get `Symbol` from `VariableDeclaration`.');
     }
+    
 }
 
 export function getStatelessComponentMetadata(decl: ts.VariableDeclaration) {
@@ -260,8 +267,12 @@ resolveFixture('sfc').then(fixturePath => {
     console.log(reactReferences);
     
     identifyStatelessComponents(chk, src).forEach(sfc => {
-        console.log(sfc);
+        console.log(sfc);        
+        console.log('----------------------------------------');
         console.log(locateSymbolForPropTypesOnStatelessComponent(chk, sfc));
+        console.log('----------------------------------------');
+        console.log(getJSDocFromVariableDeclaration(chk, sfc));
+        console.log('----------------------------------------');
         console.log('----------------------------------------');
     });
 
