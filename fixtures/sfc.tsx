@@ -17,7 +17,7 @@ export interface ExtendTest extends ButtonProps {
 /**
  * Doc comment on component.
  **/
-export const Button: react2.SFC<ButtonProps> = ({ color, children }) => (
+export const Button: react2.SFC<ExtendTest> = ({ color, children }) => (
     <button style={{ color }}>{ children }</button>
 );
 
@@ -42,7 +42,7 @@ export const Button2: react2.SFC<ButtonProps> = ({ color, children }) => (
  * @author rozzzly
  * foobar
  **/
-export const Button3: react2.SFC<ExtendTest> = ({ color, children }) => (
+export const Button3: react2.SFC<ButtonProps> = ({ color, children }) => (
     <button style={{ color }}>{ children }</button>
 );
 

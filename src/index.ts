@@ -194,7 +194,7 @@ export function identifyStatelessComponents(chk: ts.TypeChecker, src: ts.SourceF
         .filter(decl => { // only variables with the type of SFC
             const declType = chk.getTypeAtLocation(decl);
             if(chk.getFullyQualifiedName(declType.symbol) === 'React.StatelessComponent') {
-                return true; // typed as an SFC
+                return true; // typed as an SFC<?>
             } else {
                 return false; // has a different type
             }
@@ -236,9 +236,8 @@ export interface PropType {
     jsDoc: Falsifiable<JSDoc>;
 }
 
-export interface PropTypes {
-    props: (PropType & { propName: string; })[];
-}
+export type PropTypes = (PropType & { propName: string; })[];
+
 
 export type BasicTypeInfo = string;
 
@@ -278,28 +277,45 @@ export function getTypeOfInterfaceMember(chk: ts.TypeChecker, member: ts.TypeEle
     }
 }
 
-export function getPropTypesFromInterface(chk: ts.TypeChecker, sym: ts.Symbol) {
-    const propTypes: PropTypes = { props: [] };
+export function getPropTypesFromInterface(chk: ts.TypeChecker, sym: ts.Symbol): PropTypes {
+    let propTypes: PropTypes = [];
     sym.declarations.forEach(decl => {
         if (!ts.isInterfaceDeclaration(decl)) {
             throw new TypeError('Unexpected `SyntaxKind` for declaration of `Symbol`! Expected a `InterfaceDeclaration`.')
         } else {
             decl.members.forEach(member => {
-                propTypes.props.push({
-                    required: !!member.questionToken,
-                    propName: member.name.getText(),
-                    type: getTypeOfInterfaceMember(chk, member, true),
-                    jsDoc: false
-                })
+                let jsDoc: Falsifiable<JSDoc> = false;
+                propTypes = [
+                    ...propTypes,
+                    {
+                        required: !!member.questionToken,
+                        propName: member.name.getText(),
+                        type: getTypeOfInterfaceMember(chk, member, true),
+                        jsDoc: false
+                    }
+                ];
             });
+            if (decl.heritageClauses) {
+                decl.heritageClauses.forEach(clause => {
+                    // implements clauses can be ignored because its members are defined in it's body and have already been pickedup
+                    if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+                        clause.types.forEach(type => {
+                            const sym = chk.getSymbolAtLocation(type.expression);
+                            const parentProps = getPropTypesFromInterface(chk, sym);
+                            propTypes = [ ...propTypes, ...parentProps ];
+                        });
+                    }
+                });
+            }
         }
     });
+    return propTypes;
 }
 
 export function locateSymbolForPropTypesOnStatelessComponent(chk: ts.TypeChecker, decl: ts.VariableDeclaration): ts.Symbol {
     if (decl.type && ts.isTypeReferenceNode(decl.type)) {
         if (decl.type.typeArguments.length === 1) {
-            const ref = decl.type.typeArguments[0];
+            const ref: ts.TypeNode = decl.type.typeArguments[0];
             /**
              * Could also be achieved by searching `Symbol`s in the scope for one with the same identifier
              *
@@ -315,7 +331,6 @@ export function locateSymbolForPropTypesOnStatelessComponent(chk: ts.TypeChecker
              *
              * The reason I'm using im not using this is method is that I image (but have yet to test)
              * that there could be issues with type aliases and the like.
-             *
              **/
             const type = chk.getTypeFromTypeNode(ref);
             if (!type.symbol) {
@@ -341,9 +356,8 @@ resolveFixture('sfc').then(fixturePath => {
     const src = program.getSourceFile(fixturePath);
     const reactReferences = identifyReact(src);
     console.log(reactReferences);
-    
     identifyStatelessComponents(chk, src).forEach(sfc => {
-        // console.log(sfc);        
+        // console.log(sfc);
         console.log('----------------------------------------');
         const propTypesSym = locateSymbolForPropTypesOnStatelessComponent(chk, sfc);
         console.log('----------------------------------------');
