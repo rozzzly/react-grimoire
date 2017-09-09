@@ -4,8 +4,9 @@ import * as ts from 'typescript';
 
 import AST from 'ts-simple-ast';
 import { filter } from './type-tools';
+import { Falsifiable } from 'src/misc';
 
-export type Falsifiable<T> = T | false;
+
 
 
 export const FIXTURE_ROOT: string = path.resolve(__dirname, '..', 'fixtures');
@@ -20,8 +21,8 @@ export async function resolveFixture(fixture: string): Promise<string> {
     }
 
     // allow omission of file extension
-    if (!fixturePath.endsWith('.ts') && !fixturePath.endsWith('.tsx')) {
-        fixturePath += '.tsx';
+    if (!fixturePath.endsWith('.fixture.tsx')) {
+        fixturePath += '.fixture.tsx';
     }
 
     // test to see if fixture file even exists.
@@ -62,7 +63,7 @@ export function display(node: ts.Node): void {
 }
 
 
-export function kind(node: ts.Node): void {
+export function kind(node: ts.Node): void {.33
     console.log(ts.SyntaxKind[node.kind]);
 }
 export function kindsOfChildren(node: ts.Node): void {
